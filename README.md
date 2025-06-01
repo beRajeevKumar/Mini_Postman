@@ -1,4 +1,4 @@
-# QuickAPI - Your Lightweight API Client (REST Client)
+# Mini Postman - Your Lightweight API Client (REST Client)
 
 A simplified web-based REST client application akin to Postman, built with Next.js, Node.js (via Next.js API Routes), and MikroORM. This project allows users to make HTTP requests (GET, POST, PUT, DELETE), view responses, and store/retrieve request history.
 
@@ -62,7 +62,7 @@ A simplified web-based REST client application akin to Postman, built with Next.
 
     ```bash
     git clone https://github.com/beRajeevKumar/Mini_Postman
-    cd QuickAPI
+    cd Mini_Postman
     ```
 
 3.  **Install Dependencies:**
