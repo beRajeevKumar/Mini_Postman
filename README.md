@@ -61,11 +61,9 @@ A simplified web-based REST client application akin to Postman, built with Next.
 2.  **Clone the Repository:**
 
     ```bash
-    git clone <YOUR_GITHUB_REPOSITORY_URL>
+    git clone https://github.com/beRajeevKumar/Mini_Postman
     cd QuickAPI
     ```
-
-    _(Replace `<YOUR_GITHUB_REPOSITORY_URL>` after you create the repo)_
 
 3.  **Install Dependencies:**
 
