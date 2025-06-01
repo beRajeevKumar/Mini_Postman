@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { getEM } from "../../../lib/db";
-import { RequestHistory } from "../../../lib/entities/RequestHistory.entity.js"; // Adjust path if necessary
+import { RequestHistory } from "../../../lib/entities/RequestHistory.entity.js";
 
 export async function GET(request) {
   console.log(
@@ -8,14 +8,13 @@ export async function GET(request) {
   );
   let em;
   try {
-    em = await getEM(); // This might throw if DB initialization fails
+    em = await getEM();
     console.log("[/api/history] EntityManager obtained successfully.");
   } catch (dbError) {
     console.error(
       "!!! [/api/history] CRITICAL: Failed to obtain EntityManager !!!"
     );
     console.error("Database Initialization/Connection Error:", dbError.message);
-    // Check if the error message indicates a specific DB service unavailability from our db.js
     if (
       dbError.message.toLowerCase().includes("database service") ||
       dbError.message.toLowerCase().includes("orm instance is not available")
@@ -26,10 +25,9 @@ export async function GET(request) {
           details:
             "The database is currently initializing or not reachable. Please try again shortly.",
         },
-        { status: 503 } // Service Unavailable
+        { status: 503 }
       );
     }
-    // Generic fallback for other EntityManager errors
     return NextResponse.json(
       {
         error: "Internal Server Error",
@@ -38,12 +36,10 @@ export async function GET(request) {
       { status: 500 }
     );
   }
-
-  // If em was obtained successfully, proceed to fetch history
   try {
     const { searchParams } = new URL(request.url);
     const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "10", 10); // Default to 10 items per page
+    const limit = parseInt(searchParams.get("limit") || "10", 10);
 
     if (isNaN(page) || page < 1) {
       console.warn(
@@ -56,7 +52,6 @@ export async function GET(request) {
       );
     }
     if (isNaN(limit) || limit < 1 || limit > 100) {
-      // Max limit of 100 for sanity
       console.warn(
         "[/api/history] Invalid limit value received:",
         searchParams.get("limit")
@@ -74,9 +69,9 @@ export async function GET(request) {
     );
     const [historyItems, totalItems] = await em.findAndCount(
       RequestHistory,
-      {}, // No specific conditions, fetch all (respecting pagination)
+      {},
       {
-        orderBy: { createdAt: "DESC" }, // Show newest first
+        orderBy: { createdAt: "DESC" },
         limit: limit,
         offset: offset,
       }
@@ -95,14 +90,12 @@ export async function GET(request) {
       },
     });
   } catch (error) {
-    // Catch errors related to history fetching logic AFTER EM is obtained
     console.error(
       "!!! [/api/history] Error fetching history data after obtaining EM !!!"
     );
     console.error("Error Name:", error.name);
     console.error("Error Message:", error.message);
     console.error("Error Stack:", error.stack);
-    // Check if it's an error from MikroORM itself, e.g., table not found (though updateSchema should prevent this)
     if (error.name && error.name.includes("MikroORM")) {
       return NextResponse.json(
         { error: "Database query error", details: error.message },

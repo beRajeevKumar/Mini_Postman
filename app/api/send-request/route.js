@@ -1,8 +1,7 @@
-// app/api/send-request/route.js
 import axios from "axios";
 import { NextResponse } from "next/server";
-import { getEM } from "../../../lib/db"; // Correct path to db.js
-import { RequestHistory } from "../../../lib/entities/RequestHistory.entity.js"; // Correct path
+import { getEM } from "../../../lib/db";
+import { RequestHistory } from "../../../lib/entities/RequestHistory.entity.js";
 
 export async function POST(request) {
   console.log(
@@ -10,7 +9,7 @@ export async function POST(request) {
   );
   let em;
   try {
-    em = await getEM(); // This might throw if DB initialization fails
+    em = await getEM();
     console.log("[/api/send-request] EntityManager obtained successfully.");
   } catch (dbError) {
     console.error(
@@ -19,11 +18,11 @@ export async function POST(request) {
     console.error("Database Initialization/Connection Error:", dbError.message);
     return NextResponse.json(
       { error: "Database service unavailable", details: dbError.message },
-      { status: 503 } // Service Unavailable
+      { status: 503 }
     );
   }
 
-  let requestDetailsForDb; // To store details for saving
+  let requestDetailsForDb;
 
   try {
     const rawBody = await request.json();
@@ -44,9 +43,9 @@ export async function POST(request) {
       method: method ? method.toLowerCase() : "get",
       requestBody:
         requestBodyInput && typeof requestBodyInput === "object"
-          ? JSON.stringify(requestBodyInput) // Ensure string for DB if object
-          : requestBodyInput, // Keep as is if already string/null/undefined
-      requestHeaders: requestHeadersInput || {}, // Default to empty object
+          ? JSON.stringify(requestBodyInput)
+          : requestBodyInput,
+      requestHeaders: requestHeadersInput || {},
     };
 
     if (!requestDetailsForDb.url) {
@@ -58,9 +57,9 @@ export async function POST(request) {
       method: requestDetailsForDb.method,
       url: requestDetailsForDb.url,
       headers: requestDetailsForDb.requestHeaders,
-      data: requestBodyInput, // Axios handles object/string body based on headers
+      data: requestBodyInput,
       validateStatus: function (status) {
-        return status >= 100 && status < 600; // Accept all status codes
+        return status >= 100 && status < 600;
       },
     };
 
@@ -74,15 +73,13 @@ export async function POST(request) {
       externalResponse.status
     );
 
-    // Prepare data for RequestHistory entity
     const historyEntry = new RequestHistory(
       requestDetailsForDb.method,
       requestDetailsForDb.url,
-      requestDetailsForDb.requestHeaders, // MikroORM handles JSON column stringification
-      requestDetailsForDb.requestBody, // Stored as TEXT, already string or null
+      requestDetailsForDb.requestHeaders,
+      requestDetailsForDb.requestBody,
       externalResponse.status,
-      externalResponse.headers, // MikroORM handles JSON column stringification
-      // Ensure response data is stringified if it's an object for TEXT column
+      externalResponse.headers,
       externalResponse.data && typeof externalResponse.data === "object"
         ? JSON.stringify(externalResponse.data)
         : externalResponse.data
@@ -98,16 +95,14 @@ export async function POST(request) {
       status: externalResponse.status,
       statusText: externalResponse.statusText,
       headers: externalResponse.headers,
-      data: externalResponse.data, // Send original data from external API
+      data: externalResponse.data,
     });
   } catch (error) {
-    // Catch errors from request.json(), axios, or DB persistence after EM is obtained
     console.error(
       "!!! [/api/send-request] Error occurred after obtaining EntityManager !!!"
     );
     console.error("Error Message:", error.message);
     console.error("Error Stack:", error.stack);
-    // Log Axios specific error details if available
     if (error.isAxiosError && error.response) {
       console.error("Axios Error Response Status:", error.response.status);
       console.error("Axios Error Response Data:", error.response.data);
@@ -124,9 +119,7 @@ export async function POST(request) {
       details: error.message,
     };
 
-    // Attempt to save error details to history if requestDetailsForDb was populated
     if (requestDetailsForDb && requestDetailsForDb.url && em) {
-      // Check if em is available
       try {
         const errorDataToStore =
           error.isAxiosError && error.response?.data
@@ -140,11 +133,10 @@ export async function POST(request) {
           requestDetailsForDb.requestBody,
           error.isAxiosError && error.response?.status
             ? error.response.status
-            : 0, // 0 if not an Axios response error
+            : 0,
           error.isAxiosError && error.response?.headers
             ? error.response.headers
             : { error_detail: "No headers available on error" },
-          // Ensure error data for DB is stringified if it's an object
           typeof errorDataToStore === "object"
             ? JSON.stringify(errorDataToStore)
             : errorDataToStore
@@ -162,7 +154,6 @@ export async function POST(request) {
       }
     }
 
-    // Construct appropriate error response for the frontend
     if (error.isAxiosError && error.response) {
       errorResponseStatus = error.response.status;
       errorResponseJson = {
@@ -173,14 +164,11 @@ export async function POST(request) {
         data: error.response.data,
       };
     } else if (error.isAxiosError && error.request) {
-      // Request made but no response from external API
       errorResponseJson = {
         error: "No response from external API",
         details: "The target server did not respond.",
       };
     }
-    // For other errors (e.g., `await request.json()` failing, or unexpected errors)
-    // the initial errorResponseJson will be used.
 
     console.log(
       "[/api/send-request] Returning error response to frontend with status:",
