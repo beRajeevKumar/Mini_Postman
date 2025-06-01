@@ -1,15 +1,5 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
-# dependencies
 
-/node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
 
 # testing
 /coverage
@@ -48,20 +38,15 @@ next-env.d.ts
 temp/ # if you have a temp folder for MikroORM or other processes
 cache/ # if you have a cache folder
 
-# SQLite database file (important!)
-*.sqlite3
-*.sqlite3-journal 
-
-# Next.js build output
-.next/
-out/
-
-# Node Modules
-node_modules/
-
-# Logs
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
 .git/
+
+# SQLite database files
+*.sqlite
+*.sqlite3
+*.sqlite3-journal # For SQLite journal files
+*.sqlite3-shm     # For SQLite Shared Memory files
+*.sqlite3-wal     # For SQLite Write-Ahead Log files
+
+# MikroORM temp and cache files (if applicable, good to have)
+temp/
+cache/
