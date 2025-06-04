@@ -1,9 +1,11 @@
+// app/page.js
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
 import RequestForm from "./components/RequestForm";
 import ResponseDisplay from "./components/ResponseDisplay";
 import HistoryList from "./components/HistoryList";
+import ThemeToggleButton from "./components/ThemeToggleButton"; // Added import
 
 export default function Home() {
   const [response, setResponse] = useState(null);
@@ -19,7 +21,6 @@ export default function Home() {
   });
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   const [historyError, setHistoryError] = useState(null);
-
   const [requestFormValues, setRequestFormValues] = useState({});
 
   const fetchHistory = useCallback(async (pageToFetch, limitToFetch) => {
@@ -45,7 +46,7 @@ export default function Home() {
         throw data;
       }
       setHistory(data.data);
-      setHistoryPagination(data.pagination);
+      setHistoryPagination(data.pagination); // This updates the state correctly
       console.log("[Page] History updated:", data.data, data.pagination);
     } catch (err) {
       console.error("[Page] Frontend history error:", err);
@@ -62,24 +63,20 @@ export default function Home() {
 
   useEffect(() => {
     console.log(
-      "[Page] Initial useEffect for fetchHistory. Current pagination:",
-      historyPagination
+      "[Page] useEffect for fetchHistory triggered. Current pagination page:",
+      historyPagination.page,
+      "limit:",
+      historyPagination.limit
     );
-    if (historyPagination) {
-      fetchHistory(historyPagination.page, historyPagination.limit);
-    } else {
-      console.error(
-        "[Page] useEffect for fetchHistory: historyPagination is unexpectedly undefined. Initializing fetch with defaults."
-      );
-      fetchHistory(1, 10);
-    }
-  }, [fetchHistory]);
+    fetchHistory(historyPagination.page, historyPagination.limit);
+  }, [fetchHistory, historyPagination.page, historyPagination.limit]); // Correct dependencies
 
   const handleSendRequest = async (requestDetails) => {
     console.log("[Page] handleSendRequest called with:", requestDetails);
     setIsLoading(true);
     setError(null);
     setResponse(null);
+    setRequestFormValues({}); // Clear replayed values after sending
 
     try {
       console.log("[Page] Fetching /api/send-request...");
@@ -101,7 +98,6 @@ export default function Home() {
           res.status,
           data
         );
-
         throw data.error
           ? data
           : { error: `API Error ${res.status}`, details: data };
@@ -109,7 +105,13 @@ export default function Home() {
 
       setResponse(data);
       console.log("[Page] Response state updated.");
-      fetchHistory(1, historyPagination.limit);
+      // Fetch history, ensuring it goes to the first page to see the new item.
+      // Also, use the current limit from pagination state.
+      if (historyPagination) {
+        fetchHistory(1, historyPagination.limit);
+      } else {
+        fetchHistory(1, 10); // Fallback
+      }
     } catch (err) {
       console.error("[Page] Error in handleSendRequest catch block:", err);
       let errDetails = "An unknown error occurred.";
@@ -129,8 +131,17 @@ export default function Home() {
 
   const handlePageChange = (newPage) => {
     console.log("[Page] handlePageChange called with newPage:", newPage);
-    const pageToFetch = Math.max(1, newPage);
-    fetchHistory(pageToFetch, historyPagination.limit);
+    // Update the state, the useEffect will handle fetching
+    if (
+      historyPagination &&
+      newPage >= 1 &&
+      newPage <= historyPagination.totalPages
+    ) {
+      setHistoryPagination((prev) => ({ ...prev, page: newPage }));
+    } else if (newPage >= 1) {
+      // If totalPages isn't known yet but newPage is valid
+      setHistoryPagination((prev) => ({ ...prev, page: newPage }));
+    }
   };
 
   const handleReplayRequest = (historyItem) => {
@@ -141,7 +152,7 @@ export default function Home() {
       typeof historyItem.requestHeaders === "object"
     ) {
       formHeaders = Object.entries(historyItem.requestHeaders).map(
-        ([key, value]) => ({ key, value: String(value) }) // Ensure value is string
+        ([key, value]) => ({ key, value: String(value) })
       );
     }
 
@@ -155,7 +166,7 @@ export default function Home() {
       body:
         historyItem.requestBody && typeof historyItem.requestBody === "object"
           ? JSON.stringify(historyItem.requestBody, null, 2)
-          : String(historyItem.requestBody || ""), // Ensure body is string
+          : String(historyItem.requestBody || ""),
       headers: formHeaders,
     };
     setRequestFormValues(formValues);
@@ -163,12 +174,13 @@ export default function Home() {
   };
 
   return (
-    <main className="flex min-h-screen flex-col items-center p-8 md:p-12 lg:p-24 space-y-8 bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
-      <div className="w-full max-w-4xl">
+    <main className="flex min-h-screen flex-col items-center p-4 sm:p-8 md:p-12 lg:p-16 space-y-8 bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+      <div className="w-full max-w-5xl">
         <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100">
+          <h1 className="text-2xl sm:text-3xl font-bold text-slate-800 dark:text-slate-100">
             Mini Postman Clone
           </h1>
+          <ThemeToggleButton /> {/* Added ThemeToggleButton */}
         </div>
 
         <RequestForm
